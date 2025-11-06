@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Reveal Animation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* We need a few custom styles for the 3D flip animation 
+          that aren't included in Tailwind by default.
+        */
+
+        /* Apply 3D perspective to the card container */
+        .card {
+            perspective: 1000px;
+            cursor: pointer; /* Add pointer cursor to show it's clickable */
+        }
+
+        /* This is the inner element that does the actual flipping */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s;
+            transform-style: preserve-3d; /* Allows 3D transformations */
+        }
+
+        /* This class is added by JavaScript to trigger the flip */
+        .card.revealed .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* Both front and back faces are absolutely positioned */
+        .card-front,
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* For Safari */
+            backface-visibility: hidden; /* Hides the back of the element when it's not facing the camera */
+            border-radius: 0.75rem; /* rounded-xl */
+            overflow: hidden; /* Ensures image corners are rounded */
+        }
+
+        /* The back face is pre-rotated 180 degrees */
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Keyframe animation for the lightning flash */
+        @keyframes flash {
+            0% { 
+                transform: translate(-50%, -50%) scale(0); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.5); 
+                opacity: 0.7; 
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(2.5); 
+                opacity: 0; 
+            }
+        }
+
+        /* Utility class to apply the animation */
+        .flash-animation {
+            /* This is a white radial gradient, creating a soft circular flash */
+            background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 60%);
+            animation: flash 0.4s ease-out;
+            border-radius: 50%;
+        }
+
+        /* TikTok-like background swooshes */
+        .swoosh {
+            position: fixed;
+            width: 300%;
+            height: 50vh;
+            opacity: 0.3;
+            filter: blur(100px); /* Soft blurred effect */
+            z-index: 0;
+        }
+
+        .swoosh-cyan {
+            background-color: #00f2ea;
+            top: -20vh;
+            left: -50%;
+            transform: rotate(-30deg);
+        }
+
+        .swoosh-red {
+            background-color: #ff0050;
+            top: 10vh;
+            right: -50%;
+            transform: rotate(-30deg);
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicking through the canvas */
+            z-index: 999;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased">
+
+    <!-- TikTok-like background elements -->
+    <div class="swoosh swoosh-cyan"></div>
+    <div class="swoosh swoosh-red"></div>
+
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Main container -->
+    <div class="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+
+        <!-- Decorative dots, similar to the video -->
+        <div class="absolute top-10 right-10 w-8 h-8 bg-cyan-400 rounded-full opacity-50 animate-pulse z-10"></div>
+        <div class="absolute top-1/2 left-10 w-6 h-6 bg-red-500 rounded-full opacity-50 animate-pulse z-10" style="animation-delay: 0.5s;"></div>
+        <div class="absolute bottom-10 left-1/3 w-4 h-4 bg-cyan-400 rounded-full opacity-50 animate-pulse z-10" style="animation-delay: 1s;"></div>
+
+
+        <!-- Main content wrapper -->
+        <div class="z-10 relative w-full max-w-md">
+
+            <!-- Gift Grid -->
+            <!-- This grid will fade out when the animation is done -->
+            <div id="gift-grid" class="grid grid-cols-2 gap-4 sm:gap-6 transition-opacity duration-500 ease-out">
+
+                <!-- Card 1 (Top-Left) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <!-- This flash effect will play on the first card -->
+                    <div id="flash-effect" class="absolute top-1/2 left-1/2 w-full h-full" style="transform: translate(-50%, -50%);"></div>
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <!-- Placeholder for the front "box" image -->
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <!-- Placeholder for the revealed "gift" image -->
+                            <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8f471afbcebfda3841a6cc515e381f58~tplv-obj.webp" alt="TikTok Universe" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/a78bfa/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 (Top-Right) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <img src="https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3790b60a52697daa138bf8d0ec27242f.png~tplv-obj.webp" alt="King of Legends" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/34d399/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 (Mid-Left) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <img src="https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/27408e0429e288fc735e9f010da9fcf3.png~tplv-obj.webp" alt="Valerian's Oath" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/facc15/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4 (Mid-Right) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f600a2495ab5d250e7da2066484a9383.png~tplv-obj.webp" alt="Pegasus" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/60a5fa/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 5 (Bottom-Left) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/bfb8425a7e8fa03f9fec05a973a4a506.png~tplv-obj.webp" alt="Fire Phoenix" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/f97316/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 6 (Bottom-Right) -->
+                <div class="card w-full h-36 sm:h-48">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="https://i.ibb.co/ZzYtcBpx/Chat-GPT-Image-Nov-6-2025-06-51-46-PM-1.png" alt="Gift Box" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/1f2937/f43f5e?text=🎁&font=noto'">
+                        </div>
+                        <div class="card-back">
+                            <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b1667c891ed39fd68ba7252fff7a1e7c~tplv-obj.webp" alt="TikTok Stars" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200x200/ec4899/111827?text=Gift+Error'">
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- End of grid -->
+
+            <!-- Claim Form (Initially hidden) -->
+            <!-- This form overlays the screen and fades in -->
+            <div id="claim-form" class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-500 ease-in-out" style="transition-delay: 500ms;">
+                
+                <!-- Glassmorphism-style panel, like in the video -->
+                <div class="bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl text-center w-full">
+                    <h2 class="text-3xl font-bold mb-4">Congratulations</h2>
+                    
+                    <input type="text" placeholder="Your TikTok Nickname" class="w-full px-4 py-3 bg-white/20 border-2 border-white/30 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-white/50 focus:ring-2 focus:ring-cyan-300/50 mb-4">
+                    
+                    <button id="claim-button" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+                        Take gifts
+                    </button>
+                </div>
+
+            </div> <!-- End of form -->
+            
+            <!-- Success Message (Initially hidden) -->
+            <!-- I've added transform, scale-110, and blur-sm for the new "zoom in" effect -->
+            <div id="success-message" class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-500 ease-in-out transform scale-110 blur-sm">
+                
+                <div class="bg-white/10 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl text-center w-full">
+                    <h2 class="text-3xl font-bold mb-4">Success!</h2>
+                    <p class="text-lg">Your gifts have been transfered. Check your account!</p>
+                </div>
+
+            </div> <!-- End of success message -->
+
+        </div> <!-- End of main content wrapper -->
+
+    </div> <!-- End of main container -->
+
+    <script>
+        // --- Confetti Animation Logic ---
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let particles = [];
+        const colors = ['#00f2ea', '#ff0050', '#a855f7', '#3b82f6', '#ffffff'];
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 5 + 5; // size between 5 and 10
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.vx = Math.random() * 10 - 5; // horizontal velocity
+                this.vy = Math.random() * -10 - 5; // vertical velocity (upwards)
+                this.opacity = 1;
+                this.gravity = 0.2;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.opacity -= 0.01;
+            }
+
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        function createParticles() {
+            const particleCount = 200;
+            const centerX = confettiCanvas.width / 2;
+            const centerY = confettiCanvas.height / 2;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(centerX, centerY));
+            }
+        }
+
+        let animationFrameId = null;
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            particles.forEach((particle, index) => {
+                particle.update();
+                particle.draw();
+
+                if (particle.opacity <= 0 || particle.y > confettiCanvas.height) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            if (particles.length > 0) {
+                animationFrameId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); // Clear one last time
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        function startConfetti() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                particles = []; // Clear old particles
+            }
+            resizeCanvas();
+            createParticles();
+            animateConfetti();
+        }
+
+        // Adjust canvas size on window resize
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- Main Game Logic ---
+        window.addEventListener('DOMContentLoaded', () => {
+            
+            // Get all the elements we need
+            const cards = document.querySelectorAll('.card');
+            const grid = document.getElementById('gift-grid');
+            const form = document.getElementById('claim-form');
+            const flashEffect = document.getElementById('flash-effect');
+            const claimButton = document.getElementById('claim-button');
+            const successMessage = document.getElementById('success-message');
+
+            let revealedCount = 0;
+
+            // Loop through each card and add a click listener
+            cards.forEach((card, index) => {
+                card.addEventListener('click', () => {
+                    // Do nothing if the card is already revealed
+                    if (card.classList.contains('revealed')) {
+                        return;
+                    }
+
+                    // Reveal the card
+                    card.classList.add('revealed');
+                    revealedCount++;
+
+                    // On the very first card (index 0), trigger the flash effect
+                    if (index === 0) {
+                        flashEffect.classList.add('flash-animation');
+                        // Clean up the animation class after it runs
+                        setTimeout(() => flashEffect.classList.remove('flash-animation'), 400);
+                    }
+                    
+                    // If all cards are revealed, show the form
+                    if (revealedCount === cards.length) {
+                        // After the last card's animation has started,
+                        // fade out the grid and fade in the form.
+                        setTimeout(() => {
+                            // Fade out the grid
+                            grid.classList.add('opacity-0', 'pointer-events-none');
+                            
+                            // Fade in the form
+                            form.classList.remove('opacity-0', 'pointer-events-none');
+                            form.classList.add('opacity-100');
+
+                        }, 700); // 700ms after the last flip starts, for a smooth transition
+                    }
+                });
+            });
+
+            // Add click listener for the claim button
+            claimButton.addEventListener('click', () => {
+                // Animate out the form: fade, scale down, and blur
+                form.classList.remove('opacity-100');
+                form.classList.add('opacity-0', 'pointer-events-none', 'scale-90', 'blur-sm');
+
+                // After a short delay, animate in the success message
+                setTimeout(() => {
+                    // Animate in the success message: fade in, scale to normal, and remove blur
+                    successMessage.classList.remove('opacity-0', 'pointer-events-none', 'scale-110', 'blur-sm');
+                    successMessage.classList.add('opacity-100', 'scale-100', 'blur-0');
+
+                    // Start the confetti *with* the success message!
+                    startConfetti();
+                }, 300); // 300ms delay for a more cinematic feel
+            });
+        });
+    </script>
+
+</body>
+</html>
